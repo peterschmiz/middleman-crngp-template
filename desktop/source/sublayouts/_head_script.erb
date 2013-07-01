@@ -1,0 +1,2 @@
+		<% if @js_console_enabled == 1 %><script src="http://jsconsole.com/remote.js?<%= @js_console_id %>"></script><% end %>
+		<%= javascript_include_tag @head_script, :async => true %>

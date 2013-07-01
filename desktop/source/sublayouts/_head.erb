@@ -1,0 +1,13 @@
+	<head prefix="<%= @head_prefix %>">
+		<%= tag('meta', {:content => 'utf-8'}, true) %>
+		<%= tag('base', {:href => @base_href}, true) %>
+		<%= content_tag(:title, @page_title) %>
+		<%= tag('meta', {:name => 'description', :content => lorem.sentence}, true) %>
+		<%= tag('meta', {:property => 'fb:app_id', :content => @fb_app_id}, true) %>
+		<%= tag('link', {:id => 'favicon', :rel => 'icon', :type => 'image/png', :href => @icons_dir + '/favicon.png'}, true) %>
+<%= partial "sublayouts/head_og" %>
+<%= partial "sublayouts/head_mobile" %>
+<%= partial "sublayouts/head_icons" %>
+<%= partial "sublayouts/head_style" %>
+<%= partial "sublayouts/head_script" %>
+	</head>
