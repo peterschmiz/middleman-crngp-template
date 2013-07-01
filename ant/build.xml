@@ -1,0 +1,163 @@
+<project xmlns:props="antlib:org.apache.ant.props" name="" default="build" basedir=".">
+
+	<description></description>
+
+	<!-- Third-party .jar files (like compiler.jar etc.) -->
+	<property name="tools" location="./tools" />
+	<!-- Source directory -->
+	<property name="source" location="../desktop/source/" />
+	<!-- Mobile source directory -->
+	<property name="mobile.source" location="../mobile/source/" />
+	<!-- Deploy directory -->
+	<property name="deploy" location="../www/" />
+	<!-- Mobile deploy directory -->
+	<property name="mobile.deploy" location="../www/mobile/" />
+	<!-- SCSS directory -->
+	<property name="scss" location="${source}/scss/" />
+	<!-- Mobile SCSS directory -->
+	<property name="mobile.scss" location="${mobile.source}/scss/" />
+	<!-- CSS directory -->
+	<property name="css" location="${deploy}/css/" />
+	<!-- Mobile CSS directory -->
+	<property name="mobile.css" location="${mobile.deploy}/css/" />
+	<!-- JS (source) directory -->
+	<property name="js-source" location="${source}/js/" />
+	<!-- Mobile JS (source) directory -->
+	<property name="mobile.js-source" location="${mobile.source}/js/" />
+	<!-- JS (deploy) directory -->
+	<property name="js-deploy" location="${deploy}/js/" />
+	<!-- Mobile JS (deploy) directory -->
+	<property name="mobile.js-deploy" location="${mobile.deploy}/js/" />
+	<!-- Images (source) directory -->
+	<property name="images-source" location="${source}/i/" />
+	<!-- Mobile Images (source) directory -->
+	<property name="mobile.images-source" location="${mobile.source}/i/" />
+	<!-- Images (deploy) directory -->
+	<property name="images-deploy" location="${deploy}/i/" />
+	<!-- Mobile Images (deploy) directory -->
+	<property name="mobile.images-deploy" location="${mobile.deploy}/i/" />
+	<!-- SVG image (source) directory -->
+	<property name="svg-image-source" location="${source}/i/svg/" />
+	<!-- Mobile SVG image (source) directory -->
+	<property name="mobile.svg-image-source" location="${mobile.source}/i/svg/" />
+
+	<!-- Ant Contrib task definition -->
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
+		<classpath>
+			<pathelement location="${tools}/ant-contrib-1.0b3.jar" />
+		</classpath>
+	</taskdef>
+
+	<!-- Ant Props typedef -->
+	<typedef uri="antlib:org.apache.ant.props" resource="org/apache/ant/props/antlib.xml" classpath="${tools}/ant-props-1.0Alpha.jar" />
+	
+	<!-- Enabling nested variables -->
+	<propertyhelper>
+		<props:nested />
+	</propertyhelper>
+
+	<!-- Google Closure task definition -->
+	<taskdef name="closure" classname="com.google.javascript.jscomp.ant.CompileTask" classpath="${tools}/compiler.jar" />
+
+	<!-- Test for Ant Version -->
+	<fail message="All features of the build script require Ant version 1.8.2 or greater. Please upgrade to the latest version!">
+		<condition>
+			<not>
+				<antversion atleast="1.8.2" />
+			</not>
+		</condition>
+	</fail>
+
+	<!--    TARGET checkimages
+			Check source images (validation)
+			Sample usage: ant checkimages
+	-->
+
+	<target name="checkimages">
+		<foreach target="validatesvg" param="svg">
+			<path>
+				<fileset dir="${svg-image-source}">
+					<include name="**/*.svg" />
+				</fileset>
+			</path>
+		</foreach>
+
+	</target>
+
+	<!--    TARGET: validatesvg
+			Validate SVG files
+			Sample usage: ant validatesvg
+	-->
+
+	<target name="validatesvg">
+		<trycatch property="svg-valid" reference="${svg}">
+			<try>
+				<xmlvalidate file="${svg}" warn="false" failonerror="true">
+					<dtd publicId="-//W3C//DTD SVG 1.1//EN" location="http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" />
+				</xmlvalidate>
+			</try>
+			<catch />
+			<finally />
+		</trycatch>
+
+		<condition property="svg-valid" else="true">
+			<isset property="svg-valid" />
+		</condition>
+
+		<if>
+			<not>
+				<equals arg1="${svg-valid}" arg2="true" />
+			</not>
+			<then>
+				<echo message="SVG file: ${svg} file isn't valid!" />
+			</then>
+		</if>
+	</target>
+
+	<!--    TARGET: showconfig
+			Show build.xml config values
+			Sample usage: ant showconfig
+	-->
+
+	<target name="showconfig">
+		<if>
+			<and>
+				<equals arg1="${ant.project.default-target}" arg2="build-mobile" />
+			</and>
+			<then>
+				<property name="config.prefix" value="mobile." />
+			</then>
+			<else>
+				<property name="config.prefix" value="" />
+			</else>
+		</if>
+
+		<echo message="Build.xml config values" />
+		<echo message="Tools directory: ${tools}" />
+		<echo message="Source directory: ${${config.prefix}source}" />
+		<echo message="Deploy directory: ${${config.prefix}deploy}" />
+		<echo message="SCSS directory: ${${config.prefix}scss}" />
+		<echo message="CSS directory: ${${config.prefix}css}" />
+		<echo message="JS (source) directory: ${${config.prefix}js-source}" />
+		<echo message="JS (deploy) directory: ${${config.prefix}js-deploy}" />
+		<echo message="Images (source) directory: ${${config.prefix}images-source}" />
+		<echo message="Images (deploy) directory: ${${config.prefix}images-deploy}" />
+	</target>
+
+	<!--    TARGET: build
+			Sample usage: ant build
+	-->
+
+	<target name="build">
+		<buildnumber file="build.number" />
+	</target>
+
+	<!--    TARGET: build-mobile
+			Sample usage: ant build-mobile
+	-->
+
+	<target name="build-mobile">
+		<buildnumber file="build.number" />
+	</target>
+
+</project>
