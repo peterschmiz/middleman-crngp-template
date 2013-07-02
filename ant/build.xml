@@ -456,9 +456,9 @@
 			</and>
 			<then>
 				<antcall target="image-compile" />
-				<antcall target="middleman-build" />
 			</then>
 		</if>
+		<antcall target="middleman-build" />
 	</target>
 
 	<!--    TARGET: build-mobile
@@ -479,11 +479,11 @@
 			</and>
 			<then>
 				<antcall target="image-compile" />
-				<antcall target="middleman-build">
-					<param name="exec-dir" value="${mobile.source}" />
-				</antcall>
 			</then>
 		</if>
+		<antcall target="middleman-build">
+			<param name="exec-dir" value="${mobile.source}" />
+		</antcall>		
 	</target>
 
 </project>

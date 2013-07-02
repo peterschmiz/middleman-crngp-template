@@ -1,0 +1,7 @@
+@font-face {
+	font-family : 'MyFont';
+	src         : url($fontdir + 'MyFont.eot');
+	src         : url($fontdir + 'MyFont.eot?#iefix') format('embedded-opentype'), url($fontdir + 'MyFont.woff') format('woff'), url($fontdir + 'MyFont.ttf') format('truetype'), url($fontdir + 'MyFont.svg#myfont') format('svg');
+	font-weight : normal;
+	font-style  : normal;
+}

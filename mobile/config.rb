@@ -1,5 +1,5 @@
 #Basic page settings
-set :base_href, '/mobile'
+set :base_href, '/'
 set :page_title, ''
 set :head_prefix, 'og:http://ogp.me/ns# fb:http://ogp.me/ns/fb#'
 set :viewport, 'width=device-width,initial-scale=1,user-scalable=no'
@@ -22,7 +22,7 @@ set :images_dir, 'i'
 set :icons_dir, 'i/icons'
 
 #Build directory
-set :build_dir, '../../www/mobile/'
+set :build_dir, '../../www/'
 
 #iOS settings
 set :ios_webcapable, 'yes'
