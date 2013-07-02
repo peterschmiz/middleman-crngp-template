@@ -38,6 +38,7 @@ set :head_script, 'js/head.js'
 set :script_script, 'js/script.js'
 
 #Ignore libaries & files
+ignore '/i/*'
 ignore '/js/*'
 ignore '/scss/*'
 ignore '/.sass-cache'

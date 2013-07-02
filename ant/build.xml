@@ -1,13 +1,13 @@
-<project xmlns:props="antlib:org.apache.ant.props" name="" default="build" basedir=".">
+<project xmlns:props="antlib:org.apache.ant.props" name="szerencsejatek" default="build-mobile" basedir="..">
 
-	<description></description>
+	<description>Szerencsejatek</description>
 
 	<!-- Third-party .jar files (like compiler.jar etc.) -->
-	<property name="tools" location="./tools" />
+	<property name="tools" location="ant/tools" />
 	<!-- Source directory -->
-	<property name="source" location="../desktop/source/" />
+	<property name="source" location="desktop/source" />
 	<!-- Mobile source directory -->
-	<property name="mobile.source" location="../mobile/source/" />
+	<property name="mobile.source" location="mobile/source/" />
 	<!-- Deploy directory -->
 	<property name="deploy" location="../www/" />
 	<!-- Mobile deploy directory -->
@@ -50,11 +50,16 @@
 
 	<!-- Ant Props typedef -->
 	<typedef uri="antlib:org.apache.ant.props" resource="org/apache/ant/props/antlib.xml" classpath="${tools}/ant-props-1.0Alpha.jar" />
-	
+
 	<!-- Enabling nested variables -->
 	<propertyhelper>
 		<props:nested />
 	</propertyhelper>
+
+	<!-- Check OS -->
+	<condition property="is-windows" else="false">
+		<os family="windows" />
+	</condition>
 
 	<!-- Google Closure task definition -->
 	<taskdef name="closure" classname="com.google.javascript.jscomp.ant.CompileTask" classpath="${tools}/compiler.jar" />
@@ -70,26 +75,53 @@
 
 	<!--    TARGET checkimages
 			Check source images (validation)
-			Sample usage: ant checkimages
+			Sample usage: ant check-images
 	-->
 
-	<target name="checkimages">
-		<foreach target="validatesvg" param="svg">
+	<target name="check-images">
+		<if>
+			<and>
+				<equals arg1="${ant.project.default-target}" arg2="build-mobile" />
+			</and>
+			<then>
+				<property name="prefix" value="mobile." />
+			</then>
+			<else>
+				<property name="prefix" value="" />
+			</else>
+		</if>
+
+		<foreach target="validate-svg" param="svg">
 			<path>
-				<fileset dir="${svg-image-source}">
+				<fileset dir="${${prefix}svg-image-source}">
 					<include name="**/*.svg" />
 				</fileset>
 			</path>
 		</foreach>
 
+		<if>
+			<and>
+				<equals arg1="${is-windows}" arg2="true" />
+			</and>
+			<then>
+				<foreach target="crush-png" param="png">
+					<path>
+						<fileset dir="${${prefix}images-source}">
+							<include name="**/png/*.png" />
+						</fileset>
+					</path>
+				</foreach>
+			</then>
+		</if>
+
 	</target>
 
 	<!--    TARGET: validatesvg
 			Validate SVG files
-			Sample usage: ant validatesvg
+			Sample usage: ant validate-svg
 	-->
 
-	<target name="validatesvg">
+	<target name="validate-svg">
 		<trycatch property="svg-valid" reference="${svg}">
 			<try>
 				<xmlvalidate file="${svg}" warn="false" failonerror="true">
@@ -111,37 +143,303 @@
 			<then>
 				<echo message="SVG file: ${svg} file isn't valid!" />
 			</then>
+			<else>
+				<antcall target="gzip-file">
+					<param name="file" value="${svg}" />
+				</antcall>
+			</else>
 		</if>
 	</target>
 
-	<!--    TARGET: showconfig
-			Show build.xml config values
-			Sample usage: ant showconfig
+	<!--    TARGET: gzip-svgs
+			GZIP SVG asset files
 	-->
 
-	<target name="showconfig">
+	<target name="gzip-svgs">
 		<if>
 			<and>
 				<equals arg1="${ant.project.default-target}" arg2="build-mobile" />
 			</and>
 			<then>
-				<property name="config.prefix" value="mobile." />
+				<property name="prefix" value="mobile." />
 			</then>
 			<else>
-				<property name="config.prefix" value="" />
+				<property name="prefix" value="" />
+			</else>
+		</if>
+		<foreach target="gzip-file" param="file">
+			<path>
+				<fileset dir="${${prefix}svg-image-source}" casesensitive="yes">
+					<include name="**/*.svg" />
+				</fileset>
+			</path>
+		</foreach>
+	</target>
+
+	<!--    TARGET: gzip-file
+			Sub-target, don't use it directly from command line
+	-->
+
+	<target name="gzip-file">
+		<if>
+			<and>
+				<equals arg1="${ant.project.default-target}" arg2="build-mobile" />
+			</and>
+			<then>
+				<property name="prefix" value="mobile." />
+			</then>
+			<else>
+				<property name="prefix" value="" />
+			</else>
+		</if>
+		<if>
+			<contains string="${file}" substring=".svg" />
+			<then>
+				<property name="ext" value="svgz" />
+				<propertyregex property="targetfile" input="${file}" regexp="\.svg" replace="" global="true" />
+			</then>
+			<else>
+				<property name="ext" value="gz" />
+				<property name="targetfile" value="${file}" />
+			</else>
+		</if>
+		<gzip src="${file}" destfile="${targetfile}.${ext}" />
+	</target>
+
+	<!--    TARGET crush-png
+			PNGCrush .png files
+			Sub-target, don't use it directly from command line
+	-->
+
+	<target name="crush-png">
+		<if>
+			<and>
+				<equals arg1="${ant.project.default-target}" arg2="build-mobile" />
+			</and>
+			<then>
+				<property name="prefix" value="mobile." />
+			</then>
+			<else>
+				<property name="prefix" value="" />
+			</else>
+		</if>
+		<exec executable="cmd.exe" dir="${tools}" osfamily="windows">
+			<arg line="/c pngcrush" />
+			<arg line="-reduce" />
+			<arg line="-brute" />
+			<arg line="-q" />
+			<arg line="-d ${${prefix}images-deploy}/png/" />
+			<arg line="${png}" />
+		</exec>
+	</target>
+
+	<!--    TARGET: show-config
+			Show build.xml config values
+			Sample usage: ant show-config
+	-->
+
+	<target name="show-config">
+		<if>
+			<and>
+				<equals arg1="${ant.project.default-target}" arg2="build-mobile" />
+			</and>
+			<then>
+				<property name="prefix" value="mobile." />
+			</then>
+			<else>
+				<property name="prefix" value="" />
 			</else>
 		</if>
 
 		<echo message="Build.xml config values" />
 		<echo message="Tools directory: ${tools}" />
-		<echo message="Source directory: ${${config.prefix}source}" />
-		<echo message="Deploy directory: ${${config.prefix}deploy}" />
-		<echo message="SCSS directory: ${${config.prefix}scss}" />
-		<echo message="CSS directory: ${${config.prefix}css}" />
-		<echo message="JS (source) directory: ${${config.prefix}js-source}" />
-		<echo message="JS (deploy) directory: ${${config.prefix}js-deploy}" />
-		<echo message="Images (source) directory: ${${config.prefix}images-source}" />
-		<echo message="Images (deploy) directory: ${${config.prefix}images-deploy}" />
+		<echo message="Source directory: ${${prefix}source}" />
+		<echo message="Deploy directory: ${${prefix}deploy}" />
+		<echo message="SCSS directory: ${${prefix}scss}" />
+		<echo message="CSS directory: ${${prefix}css}" />
+		<echo message="JS (source) directory: ${${prefix}js-source}" />
+		<echo message="JS (deploy) directory: ${${prefix}js-deploy}" />
+		<echo message="Images (source) directory: ${${prefix}images-source}" />
+		<echo message="Images (deploy) directory: ${${prefix}images-deploy}" />
+	</target>
+
+	<!--    TARGET: image-compile
+			GZIP, validate image assets
+			Sample usage: image-compile
+	-->
+
+	<target name="image-compile">
+		<if>
+			<and>
+				<equals arg1="${ant.project.default-target}" arg2="build-mobile" />
+			</and>
+			<then>
+				<property name="prefix" value="mobile." />
+			</then>
+			<else>
+				<property name="prefix" value="" />
+			</else>
+		</if>
+		<antcall target="check-images" />
+		<move todir="${${prefix}images-deploy}/svg">
+			<fileset dir="${${prefix}svg-image-source}">
+				<exclude name="**/*.svg" />
+				<include name="**/*.svgz" />
+			</fileset>
+		</move>
+	</target>
+
+	<!--    TARGET: js-compile
+			Compiles JS files
+			Sample usage: ant js-compile
+	-->
+
+	<target name="js-compile">
+		<if>
+			<and>
+				<equals arg1="${ant.project.default-target}" arg2="build-mobile" />
+			</and>
+			<then>
+				<property name="prefix" value="mobile." />
+			</then>
+			<else>
+				<property name="prefix" value="" />
+			</else>
+		</if>
+
+		<if>
+			<available file="${${prefix}js-source}" type="dir" />
+			<then>
+				<foreach target="google-closure" param="foreach.file">
+					<path>
+						<fileset dir="${${prefix}js-source}" casesensitive="yes">
+							<exclude name="**/libs/*.js" />
+							<include name="**/*.js" />
+						</fileset>
+					</path>
+				</foreach>
+			</then>
+			<else>
+				<echo message="The source directory for .js files (${${prefix}js-source} does not exists!" />
+			</else>
+		</if>
+
+		<replaceregexp match="\x0a" replace="" flags="sg">
+			<fileset dir="${${prefix}js-deploy}" includes="**/*.min.js" />
+		</replaceregexp>
+	</target>
+
+	<!--    TARGET: google-closure
+			Minifies JS files with Google Closure
+			Sample usage: ant google-closure
+	-->
+
+	<target name="google-closure">
+		<if>
+			<or>
+				<equals arg1="${ant.project.default-target}" arg2="build-mobile" />
+				<equals arg1="${mode}" arg2="mobile" />
+			</or>
+			<then>
+				<property name="prefix" value="mobile." />
+			</then>
+			<else>
+				<property name="prefix" value="" />
+			</else>
+		</if>
+		<basename property="file.js" file="${foreach.file}" />
+		<script language="javascript">
+			<![CDATA[
+	            var fullPath = project.getProperty('foreach.file'),
+                    fileOnly = project.getProperty('file.js'),
+                    pathOnly = fullPath.substring(0, fullPath.indexOf(fileOnly)),
+	                name = fileOnly.substring(0, parseInt(String(fileOnly).length, 10) - 3);
+                project.setProperty('directory', pathOnly);
+                project.setProperty('name', name);
+            ]]>
+		</script>
+		<closure compilationLevel="simple" forceRecompile="true" warning="quiet" debug="false" sourceMapOutputFile="${${prefix}js-deploy}/${name}.min.js.map" sourceMapFormat="V3" output="${${prefix}js-deploy}/${name}.min.js">
+			<sources dir="${directory}">
+				<file name="${file.js}" />
+			</sources>
+		</closure>
+	</target>
+
+	<!--    TARGET: scss-compile
+			Compiles .scss source files
+			Sample usage: ant scss-compile
+	-->
+
+	<target name="scss-compile">
+		<condition property="style" else="expanded">
+			<isset property="style" />
+		</condition>
+
+		<if>
+			<or>
+				<equals arg1="${ant.project.default-target}" arg2="build-mobile" />
+				<equals arg1="${mode}" arg2="mobile" />
+			</or>
+			<then>
+				<property name="prefix" value="mobile." />
+			</then>
+			<else>
+				<property name="prefix" value="" />
+			</else>
+		</if>
+
+		<property name="temp.css" value="css" />
+		<property name="scss.dir" value="scss" />
+		<property name="compile.path" value="${scss.dir}:${temp.css}" />
+		<property name="scss.method" value="--update" />
+
+		<exec executable="cmd.exe" dir="${${prefix}source}" osfamily="windows">
+			<arg line="/c scss ${scss.method} ${compile.path} --force --style=${style}" />
+		</exec>
+
+		<exec executable="scss" dir="${${prefix}source}" osfamily="unix">
+			<arg line="${scss.method} ${compile.path} --force --style=${style}" />
+		</exec>
+
+		<exec executable="scss" dir="${${prefix}source}" osfamily="mac">
+			<arg line="${scss.method} ${compile.path} --force --style=${style}" />
+		</exec>
+
+		<move todir="${${prefix}css}">
+			<fileset dir="${${prefix}source}/css">
+				<include name="**/*.css" />
+			</fileset>
+		</move>
+		<delete dir="${${prefix}source}/${temp.css}" />
+	</target>
+
+	<!--    TARGET: middleman-build
+			Build middleman
+			Sample usage: ant middleman-build
+	-->
+
+	<target name="middleman-build">
+		<condition property="exec-dir" else="${source}">
+			<isset property="exec-dir" />
+		</condition>
+
+		<exec executable="cmd.exe" dir="${exec-dir}" osfamily="windows">
+			<arg line="/c bundle exec" />
+			<arg line="middleman" />
+			<arg line="build" />
+		</exec>
+
+		<exec executable="bundle" dir="${exec-dir}" osfamily="unix">
+			<arg line="exec" />
+			<arg line="middleman" />
+			<arg line="build" />
+		</exec>
+
+		<exec executable="bundle" dir="${exec-dir}" osfamily="mac">
+			<arg line="exec" />
+			<arg line="middleman" />
+			<arg line="build" />
+		</exec>
 	</target>
 
 	<!--    TARGET: build
@@ -150,6 +448,17 @@
 
 	<target name="build">
 		<buildnumber file="build.number" />
+		<antcall target="scss-compile" />
+		<antcall target="js-compile" />
+		<if>
+			<and>
+				<equals arg1="${full}" arg2="true" />
+			</and>
+			<then>
+				<antcall target="image-compile" />
+				<antcall target="middleman-build" />
+			</then>
+		</if>
 	</target>
 
 	<!--    TARGET: build-mobile
@@ -158,6 +467,23 @@
 
 	<target name="build-mobile">
 		<buildnumber file="build.number" />
+		<antcall target="scss-compile">
+			<param name="mode" value="mobile" />
+		</antcall>
+		<antcall target="js-compile">
+			<param name="mode" value="mobile" />
+		</antcall>
+		<if>
+			<and>
+				<equals arg1="${full}" arg2="true" />
+			</and>
+			<then>
+				<antcall target="image-compile" />
+				<antcall target="middleman-build">
+					<param name="exec-dir" value="${mobile.source}" />
+				</antcall>
+			</then>
+		</if>
 	</target>
 
 </project>
